@@ -7,8 +7,15 @@ const session = require('express-session')
 const passport = require('passport')
 const bodyParser = require('body-parser')
 const jwt = require('jsonwebtoken')
-const mysql = require('mysql')
-const QRCode = require('qrcode')
+// const mysql = require('mysql')
+const QRCode = require('qrcode');
+
+const CashierController = require("./controller/cahsier-controller");
+const CustomerController = require("./controller/customer-controller");
+
+// //call the sequence
+const db = require("./config");
+const cashierController = require('./controller/cahsier-controller')
 
 require('dotenv').config()
 
@@ -25,18 +32,18 @@ app.set('view engine', 'ejs')
 app.set('views', path.join(__dirname, 'view'))
 
 //Database Connection
-const con = mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: 'pos_mobile_app',
-    multipleStatements: true
-});
+// const con = mysql.createConnection({
+//     host: process.env.DB_HOST,
+//     user: process.env.DB_USER,
+//     password: process.env.DB_PASS,
+//     database: 'pos_mobile_app',
+//     multipleStatements: true
+// });
 
-con.connect((err) => {
-    if (err) throw err;
-    console.log("MySQL DB Connected!");
-});
+// con.connect((err) => {
+//     if (err) throw err;
+//     console.log("MySQL DB Connected!");
+// });
 
 
 //Routes
@@ -76,32 +83,16 @@ app.get('/genrateQRCode', (req, res) => {
     })
 })
 
-app.post('/login', (req, res, next) => {
-    var email = req.body.email
-    var password = req.body.password
-    var query = `select * from Cashiers where Email = "${email}"`
-    con.query(query, (err, result) => {
-        err ?
-            res.json({
-                status: false,
-                message: err.sqlMessage
-            }) :
-            !result[0] ?
-                res.json({
-                    status: false,
-                    message: 'User does not exist!'
-                }) :
-                (result[0].Password === password) ?
-                    res.json({
-                        status: true,
-                        data: result[0],
-                        message: 'Successfully Logged in!'
-                    }) :
-                    res.json({
-                        status: false,
-                        message: 'Incorrect password!'
-                    })
-    })
+app.post("/login", (req, res) => {
+    CashierController.loginCashier(req, res);
+})
+
+app.get("/get-all-cashiers", (req, res) => {
+    CashierController.getAllCashiers(req, res);
+})
+
+app.get("/get-all-customers", (req, res) => {
+    CustomerController.getAllCustomer(req, res);
 })
 
 app.post('/withdraw', (req, res, next) => {
@@ -141,6 +132,10 @@ app.post('/withdraw', (req, res, next) => {
                         message: 'Incorrect pin!'
                     })
     })
+})
+
+app.post('/verify-customer', (req, res) => {
+    CustomerController.verifyCustomer(req, res)
 })
 
 app.listen(port, () => { console.log(`API live on port ${port}`) })
